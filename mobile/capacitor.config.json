@@ -1,0 +1,15 @@
+{
+  "appId": "com.hoster.app",
+  "appName": "Hoster",
+  "webDir": "www",
+  "backgroundColor": "#0b0d12",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true,
+    "allowNavigation": ["*"]
+  },
+  "android": {
+    "appendUserAgent": "HosterApp",
+    "allowMixedContent": true
+  }
+}

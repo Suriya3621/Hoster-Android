@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0d12" />
+  <title>Hoster</title>
+  <style>
+    :root { --bg:#0b0d12; --card:#141821; --border:#262c3a; --text:#e8ebf2; --muted:#8a93a6; --accent:#6366f1; --danger:#f87171; --ok:#34d399; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin:0; min-height:100%; background:var(--bg); color:var(--text);
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+    body { min-height:100vh; display:flex; align-items:center; justify-content:center;
+      padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+      background: radial-gradient(900px 500px at 50% -10%, rgba(99,102,241,.25), transparent 60%), var(--bg); }
+    main { width:100%; max-width:420px; }
+    .logo { width:84px; height:84px; margin:0 auto 20px; display:block; border-radius:22px; box-shadow:0 12px 40px -10px var(--accent); }
+    h1 { text-align:center; font-size:26px; margin:0; letter-spacing:-.02em; }
+    .sub { text-align:center; color:var(--muted); font-size:14px; margin:6px 0 26px; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:18px; }
+    label { display:block; font-size:12px; color:var(--muted); margin-bottom:8px; }
+    input { width:100%; font-size:16px; padding:14px; border-radius:12px; border:1px solid var(--border);
+      background:#0f121a; color:var(--text); outline:none; }
+    input:focus { border-color:var(--accent); }
+    button { width:100%; margin-top:14px; font-size:16px; font-weight:600; padding:14px; border:0; border-radius:12px;
+      background:var(--accent); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; }
+    button:disabled { opacity:.6; }
+    .msg { min-height:20px; margin-top:12px; font-size:13px; text-align:center; color:var(--muted); }
+    .msg.err { color:var(--danger); } .msg.ok { color:var(--ok); }
+    .spin { width:16px; height:16px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:s .7s linear infinite; }
+    @keyframes s { to { transform:rotate(360deg); } }
+    .tips { margin-top:18px; font-size:12px; line-height:1.6; color:var(--muted); }
+    .tips b { color:var(--text); font-weight:600; }
+    code { background:#0f121a; border:1px solid var(--border); border-radius:6px; padding:1px 6px; font-size:12px; }
+    #auto { display:none; text-align:center; }
+    #auto p { color:var(--muted); font-size:14px; }
+    #auto a { color:var(--accent); font-size:14px; }
+  </style>
+</head>
+<body>
+  <main>
+    <img class="logo" src="icon.png" alt="" />
+    <h1>Hoster</h1>
+    <p class="sub">Your local files. Everywhere.</p>
+
+    <div id="auto" class="card">
+      <div class="spin" style="margin:4px auto 12px;border-color:rgba(255,255,255,.2);border-top-color:var(--accent)"></div>
+      <p>Connecting to <b id="autoAddr"></b>…</p>
+      <a href="#" id="autoCancel">Use a different address</a>
+    </div>
+
+    <form id="form" class="card" autocomplete="off">
+      <label for="addr">Address of Hoster on your PC</label>
+      <input id="addr" inputmode="url" autocapitalize="none" autocorrect="off" spellcheck="false"
+             placeholder="192.168.1.20:4173" />
+      <button id="go" type="submit"><span id="goText">Connect</span></button>
+      <div id="msg" class="msg"></div>
+    </form>
+
+    <p class="tips">
+      <b>Where do I find the address?</b><br />
+      Open Hoster on your PC — the home screen shows an address like <code>http://192.168.1.20:4173</code>
+      and a QR code. Your phone must be on the <b>same Wi-Fi</b>.
+    </p>
+  </main>
+
+  <script>
+    const KEY = 'hoster:server';
+    const $ = (id) => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+
+    function normalize(raw) {
+      let v = String(raw || '').trim().replace(/\s+/g, '');
+      if (!v) return '';
+      if (!/^https?:\/\//i.test(v)) v = 'http://' + v;
+      try {
+        const u = new URL(v);
+        if (!u.port) u.port = '4173';            // Hoster's default port
+        return `${u.protocol}//${u.hostname}:${u.port}`;
+      } catch { return ''; }
+    }
+
+    async function check(url, ms = 5000) {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), ms);
+      try {
+        const res = await fetch(url + '/api/status', { signal: ctl.signal });
+        const data = await res.json();
+        return data && data.app === 'Hoster';
+      } catch { return false; } finally { clearTimeout(t); }
+    }
+
+    function setMsg(text, cls = '') { const m = $('msg'); m.textContent = text; m.className = 'msg ' + cls; }
+    function busy(on) { $('go').disabled = on; $('goText').textContent = on ? 'Connecting…' : 'Connect'; }
+
+    async function connect(raw, { silent } = {}) {
+      const url = normalize(raw);
+      if (!url) { setMsg('Enter the address shown on your PC.', 'err'); return false; }
+      busy(true); if (!silent) setMsg('Looking for Hoster…');
+      const ok = await check(url);
+      busy(false);
+      if (!ok) {
+        setMsg("Couldn't reach Hoster there. Is it running, and are you on the same Wi-Fi? Windows may also need to allow Hoster through the firewall.", 'err');
+        return false;
+      }
+      localStorage.setItem(KEY, url);
+      setMsg('Connected!', 'ok');
+      location.replace(url);
+      return true;
+    }
+
+    $('form').addEventListener('submit', (e) => { e.preventDefault(); connect($('addr').value); });
+
+    (async function start() {
+      const saved = localStorage.getItem(KEY);
+      if (saved) $('addr').value = saved.replace(/^http:\/\//, '');
+      // Reconnect automatically unless the user came here to change the server.
+      if (saved && !params.has('change')) {
+        $('form').style.display = 'none';
+        $('auto').style.display = 'block';
+        $('autoAddr').textContent = saved.replace(/^http:\/\//, '');
+        let cancelled = false;
+        $('autoCancel').onclick = (e) => { e.preventDefault(); cancelled = true; $('auto').style.display = 'none'; $('form').style.display = 'block'; };
+        const ok = await check(saved, 6000);
+        if (cancelled) return;
+        if (ok) return location.replace(saved);
+        $('auto').style.display = 'none'; $('form').style.display = 'block';
+        setMsg("Couldn't reach your PC. Check that Hoster is running and you're on the same Wi-Fi.", 'err');
+      }
+    })();
+  </script>
+</body>
+</html>

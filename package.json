@@ -1,0 +1,20 @@
+{
+  "name": "hoster",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Hoster \u2014 Your Local Files. Everywhere. A local-network file hosting web app and media center.",
+  "scripts": {
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client -- --host",
+    "dev": "concurrently -n SERVER,CLIENT -c blue,magenta \"npm run server\" \"npm run client\"",
+    "build": "npm run build --prefix client",
+    "start": "npm run build && node server/server.js",
+    "start:built": "node server/server.js",
+    "desktop": "npm run build && npm install --prefix desktop && npm start --prefix desktop",
+    "dist:win": "npm run build && npm install --prefix desktop && npm run dist:win --prefix desktop"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

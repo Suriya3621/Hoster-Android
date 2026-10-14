@@ -1,0 +1,21 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+server/sample-data/**
+!server/sample-data/**/README.txt
+
+# Hoster's own saved data (shares, notes)
+server/data/
+
+# Build output
+client/dist/
+desktop/node_modules/
+desktop/stage/
+release/
+mobile/node_modules/
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/local.properties

@@ -1,0 +1,18 @@
+{
+  "name": "hoster-desktop",
+  "version": "2.0.0",
+  "description": "Hoster desktop app — shares your PC's files with your phone over Wi-Fi.",
+  "author": "Hoster",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "stage": "node scripts/stage.js",
+    "start": "electron .",
+    "dist:win": "node scripts/stage.js && electron-builder --win --x64 --config electron-builder.yml",
+    "dist:dir": "node scripts/stage.js && electron-builder --win --x64 --dir --config electron-builder.yml"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  }
+}
